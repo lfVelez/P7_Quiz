@@ -152,4 +152,68 @@ exports.check = (req, res, next) => {
         result,
         answer
     });
+}
+
+// GET/quizzes/randomplay
+    exports.randomplay = (req,res,next) => {
+        if(req.session.randomplay == undefined){
+            req.session.randomplay = [];
+        }
+        /*
+        Uso whereOpt para que no me devuelva la misma pregunta que se encuentre en req.session.randomplay
+         */
+        const whereOpt = {"id": {[Sequelize.Op.notIn]:req.session.randomplay}};
+
+           return models.quiz.count({where:whereOpt}) // where busca en la base de datos|whereOPt busca el id no repetido
+            .then(count => {
+                let aux = Math.floor(Math.random()*count); // me va a dar los id
+                return models.quiz.findAll({where:whereOpt,
+                offset : aux, // busco en el array desde 0 hasta offset
+                    limit :1 // me devuelve una solo
+
+                })
+                    .then(quizzes => {
+                        return quizzes[0]; // Quiero la primera que cumpla las condiciones anteriores
+                    });
+            })
+               .then(quiz => {
+                   if(quiz === undefined){
+                       console.log("Se han contestado todas las preguntas");
+                       let score = req.session.randomplay.length; // Numero de preguntas acertadas
+                       req.session.randomplay.length= [];
+                       res.render('quizzes/random_nomore',{
+                           score
+                       });
+                   } else{
+                       console.log("Quiz " + quiz);
+                       let score = req.session.randomplay.length; // Numero de preguntas acertadas
+                       res.render('quizzes/random_play',{
+                           quiz,score
+                       });
+                   }
+
+               })
+            .catch(error => {
+                req.flash('error','error getting a random Quiz: ' + error.message);
+                next(error);
+            })
+ };
+
+exports.randomcheck = (req,res,next) => {
+    const {quiz, query} = req;
+
+    const answer = query.answer || ""; // Lo busco en el query porque es un GET, si fuese un post tendria que buscarlo con body
+    const result = answer.toLowerCase().trim() === quiz.answer.toLowerCase().trim();
+    if(result){
+        if(req.session.randomplay.indexOf(quiz.id)===-1){ // Si no esta en el almacen local, lo mete
+            req.session.randomplay.push(quiz.id);
+        }
+        let score = req.session.randomplay.length; // En este punto se ha contestado bien la pregunta
+        res.render('quizzes/random_result',{score,result,answer});
+    }else{
+        let score = req.session.randomplay.length; // En este punto se ha contestado bien la pregunta
+        req.session.randomplay=[];
+        res.render('quizzes/random_result',{score,result,answer});
+    }
 };
+
