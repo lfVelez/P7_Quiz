@@ -48,7 +48,8 @@ sequelize.sync()
 sequelize.sync()
     .then(() => console.log('Data Bases created successfully'))
     .catch(error => {
-        console.log("Error creating the data bases tables",error)
+        console.log("Error creating the data bases tables",error);
+        process.exit(1);
     });
 // Relation between models
 
