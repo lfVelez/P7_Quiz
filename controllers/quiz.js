@@ -9,8 +9,10 @@ exports.load = (req, res, next, quizId) => {
 
     models.quiz.findById(quizId, {
         include: [
-            models.tip,
-            {model: models.user, as: 'author'}
+            {model:models.tip,
+                include:[//Cuando cargue el quiz correspondiente, aparece tambien el autor
+                    {model: models.user, as: 'author'}]}, // carga ansiosa
+            {model:models.user,as:'author'}
         ]
     })
     .then(quiz => {
