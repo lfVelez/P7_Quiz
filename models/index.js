@@ -26,6 +26,30 @@ sequelize.import(path.join(__dirname,'user'));
 sequelize.import(path.join(__dirname,'session'));
 
 
+// Creacion de quizzes -> con las mismas preguntas iniciales siempre
+sequelize.sync()
+    .then(() =>{
+        sequelize.models.quiz.count()
+    })
+    .then(count => {
+        if(! count) { // Si esta vacio => lo creo
+            return sequelize.models.quiz.bulkCreate([
+                {question:"Capital de Italia",answer:"Roma"},
+                {question:"Capital de Francia", answer:"Paris"},
+                {question:"Capital de España", answer:"Madrid"},
+                {question:"Capital de Portugal", answer:"Lisboa"}
+            ])
+        }
+    })
+    .catch(error => {
+        console.log(error);
+    });
+
+sequelize.sync()
+    .then(() => console.log('Data Bases created successfully'))
+    .catch(error => {
+        console.log("Error creating the data bases tables",error)
+    });
 // Relation between models
 
 const {quiz, tip, user} = sequelize.models;
@@ -37,5 +61,9 @@ quiz.hasMany(tip);
 user.hasMany(quiz, {foreignKey: 'authorId'});
 quiz.belongsTo(user, {as: 'author', foreignKey: 'authorId'});
 
+
+//Relation 1-to-N beetwen User and Tip:
+user.hasMany(tip,{foreignKey:'authorId'});
+quiz.belongsTo(user,{as:'author',foreignKey:'authorId'});
 
 module.exports = sequelize;
